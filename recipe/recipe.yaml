@@ -53,6 +53,8 @@ requirements:
     - if: build_platform != target_platform and unix
       then:
         - ocaml_${{ build_platform }} ${{ ocaml_compiler_version }}.*
+        # ocaml >=16: the cross compiler activates itself (bare ocamlc/ocamlopt shims, OCAMLLIB)
+        - ocaml_${{ target_platform }}[version="${{ ocaml_compiler_version }}.*", build_number=">=16"]
     # windows cross: the self-contained gcc track needs no vcvars
     - if: build_platform != target_platform and not unix
       then:
