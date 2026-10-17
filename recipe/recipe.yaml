@@ -1,6 +1,6 @@
 context:
   version: "1.5.2"
-  build_number: 1
+  build_number: 2
 
   # ocaml_win-64 ships gcc_* and vs2022_* at the same version/build; name the track.
   c_toolchain: ${{ "" if unix else c_compiler ~ "_*" }}
@@ -38,30 +38,30 @@ requirements:
         - ${{ stdlib("m2w64_c") }}
       else:
         - ${{ stdlib("c") }}
-    - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.* ${{ c_toolchain }}
+    # MSVC is activated here, once: ocaml_win-64 >=14 only run-constrains it.
+    - if: not unix and c_compiler != "gcc"
+      then:
+        - ${{ compiler('c') }}
+    - ${{ compiler("ocaml") }}
+    # compiler("ocaml") renders no toolchain track; name it on windows.
+    - if: not unix
+      then:
+        - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.* ${{ c_toolchain }}
     - if: build_platform != target_platform
       then:
-        - ocaml ${{ ocaml_compiler_version }}.*
+        - ocaml_${{ build_platform }} ${{ ocaml_compiler_version }}.*
     - ocaml-dune >=3.4
   host:
     - ocaml ${{ ocaml_compiler_version }}.*
-    - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.* ${{ c_toolchain }}
-    # The mingw (ucrt64) toolchain links api-ms-win-crt-*.dll. On vs2022 the
-    # MSVC runtime run_exports bring ucrt into run; on gcc nothing does, and a
-    # host-only ucrt still counts as overlinking.
-    - if: not unix and c_compiler == "gcc"
+    # The noarch ocaml metapackage does not pin the windows toolchain track.
+    - if: not unix
       then:
-        - ucrt
-  run:
-    - if: not unix and c_compiler == "gcc"
-      then:
-        - ucrt
-  # The ocaml run_export carries no build-string glob, so it does not encode
-  # the windows toolchain track; constrain it explicitly.
+        - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.* ${{ c_toolchain }}
+  # The ocaml run_export does not encode the windows toolchain track.
   run_constraints:
     - if: not unix
       then:
-        - ocaml_${{ target_platform }} * ${{ c_compiler }}_*
+        - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.* ${{ c_toolchain }}
 
 tests:
   - package_contents:
