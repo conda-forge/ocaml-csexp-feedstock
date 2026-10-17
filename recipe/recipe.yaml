@@ -1,10 +1,12 @@
 context:
   version: "1.5.2"
-  build_number: 2
+  build_number: 3
 
   # ocaml_win-64 ships gcc_* and vs2022_* at the same version/build; name the track.
   c_toolchain: ${{ "" if unix else c_compiler ~ "_*" }}
   library: ${{ "Library/" if not unix else "" }}
+  # ELF machine token `file` prints for the target; checked by the arch test
+  elf_arch: ${{ "x86-64" if target_platform == "linux-64" else "aarch64" if target_platform == "linux-aarch64" else "PowerPC" if target_platform == "linux-ppc64le" else "RISC-V" if target_platform == "linux-riscv64" else "S/390" if target_platform == "linux-s390x" else "" }}
 
 package:
   name: ocaml-csexp
@@ -26,6 +28,8 @@ build:
         # Plain cmd.exe, not MSYS2 bash: pure OCaml, no stubs, so no wrapper is
         # needed and the backslashed install prefix reaches dune intact. The
         # dune cache trips over mixed path separators on windows.
+        # dune install also opens the shared cache; disable it for every dune call
+        - set DUNE_CACHE=disabled
         - dune build --cache=disabled --profile=release -p csexp @install
         - if errorlevel 1 exit 1
         - dune install --prefix="%LIBRARY_PREFIX%" --libdir="%LIBRARY_PREFIX%\lib\ocaml" csexp
@@ -33,31 +37,39 @@ build:
 
 requirements:
   build:
+    - ${{ compiler("ocaml") }}
     - if: not unix and c_compiler == "gcc"
       then:
         - ${{ stdlib("m2w64_c") }}
       else:
         - ${{ stdlib("c") }}
-    # MSVC is activated here, once: ocaml_win-64 >=14 only run-constrains it.
+    # ocaml_win-64 >=14 only run-constrains the C compiler; activate it here, once (vs2022, zig)
     - if: not unix and c_compiler != "gcc"
       then:
-        - ${{ compiler('c') }}
-    - ${{ compiler("ocaml") }}
-    # compiler("ocaml") renders no toolchain track; name it on windows.
+        - ${{ compiler("c") }}
+    # compiler("ocaml") renders no toolchain track; name it on windows
     - if: not unix
       then:
         - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.* ${{ c_toolchain }}
-    - if: build_platform != target_platform
+    # the cross compiler does not pull the native one; the build runs OCaml on the build machine
+    - if: build_platform != target_platform and unix
       then:
         - ocaml_${{ build_platform }} ${{ ocaml_compiler_version }}.*
+        # ocaml >=17: the cross compiler activates itself (shims, OCAMLLIB, host OCAMLPATH) and has natdynlink
+        - ocaml_${{ target_platform }}[version="${{ ocaml_compiler_version }}.*", build_number=">=17"]
+    # windows cross: the self-contained gcc track needs no vcvars
+    - if: build_platform != target_platform and not unix
+      then:
+        - ocaml_${{ build_platform }} ${{ ocaml_compiler_version }}.* gcc_*
     - ocaml-dune >=3.4
   host:
+    # library: ocaml's run_export pins the compiler patch version
     - ocaml ${{ ocaml_compiler_version }}.*
-    # The noarch ocaml metapackage does not pin the windows toolchain track.
+    # the noarch ocaml metapackage does not pin the windows toolchain track
     - if: not unix
       then:
         - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.* ${{ c_toolchain }}
-  # The ocaml run_export does not encode the windows toolchain track.
+  # the ocaml run_export does not encode the windows toolchain track
   run_constraints:
     - if: not unix
       then:
@@ -69,6 +81,26 @@ tests:
       files:
         - ${{ library }}lib/ocaml/csexp/*
         - ${{ library }}doc/csexp/*
+
+  # cross lanes test under qemu binfmt, which would also run a build-machine
+  # binary; check the native objects' ELF headers name the target instead
+  # (csexp.a: the static archive ships on every lane, csexp.cmxs only with natdynlink)
+  - if: linux
+    then:
+      script:
+        # test scripts are not jinja-rendered; hand the token over by env
+        env:
+          ELF_ARCH: ${{ elf_arch }}
+        content:
+          - mkdir -p objs
+          - cd objs
+          - ar x "${PREFIX}/lib/ocaml/csexp/csexp.a"
+          - file -L ./*.o
+          - test -z "$(file -L ./*.o | grep -v "${ELF_ARCH}")"
+      requirements:
+        build:
+          - file
+          - binutils
 
 about:
   homepage: https://github.com/ocaml-dune/csexp
