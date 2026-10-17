@@ -1,6 +1,6 @@
 context:
   version: "1.5.2"
-  build_number: 2
+  build_number: 3
 
   # ocaml_win-64 ships gcc_* and vs2022_* at the same version/build; name the track.
   c_toolchain: ${{ "" if unix else c_compiler ~ "_*" }}
@@ -26,6 +26,8 @@ build:
         # Plain cmd.exe, not MSYS2 bash: pure OCaml, no stubs, so no wrapper is
         # needed and the backslashed install prefix reaches dune intact. The
         # dune cache trips over mixed path separators on windows.
+        # dune install also opens the shared cache; disable it for every dune call
+        - set DUNE_CACHE=disabled
         - dune build --cache=disabled --profile=release -p csexp @install
         - if errorlevel 1 exit 1
         - dune install --prefix="%LIBRARY_PREFIX%" --libdir="%LIBRARY_PREFIX%\lib\ocaml" csexp
