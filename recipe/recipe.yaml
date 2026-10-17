@@ -5,6 +5,8 @@ context:
   # ocaml_win-64 ships gcc_* and vs2022_* at the same version/build; name the track.
   c_toolchain: ${{ "" if unix else c_compiler ~ "_*" }}
   library: ${{ "Library/" if not unix else "" }}
+  # ELF machine token `file` prints for the target; checked by the arch test
+  elf_arch: ${{ "x86-64" if target_platform == "linux-64" else "aarch64" if target_platform == "linux-aarch64" else "PowerPC" if target_platform == "linux-ppc64le" else "RISC-V" if target_platform == "linux-riscv64" else "S/390" if target_platform == "linux-s390x" else "" }}
 
 package:
   name: ocaml-csexp
@@ -79,6 +81,21 @@ tests:
       files:
         - ${{ library }}lib/ocaml/csexp/*
         - ${{ library }}doc/csexp/*
+
+  # cross lanes test under qemu binfmt, which would also run a build-machine
+  # binary; check the native plugin's ELF header names the target instead
+  - if: linux
+    then:
+      script:
+        # test scripts are not jinja-rendered; hand the token over by env
+        env:
+          ELF_ARCH: ${{ elf_arch }}
+        content:
+          - file -L "${PREFIX}/lib/ocaml/csexp/csexp.cmxs"
+          - file -L "${PREFIX}/lib/ocaml/csexp/csexp.cmxs" | grep -q "${ELF_ARCH}"
+      requirements:
+        build:
+          - file
 
 about:
   homepage: https://github.com/ocaml-dune/csexp
