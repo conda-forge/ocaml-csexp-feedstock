@@ -67,10 +67,10 @@ Current release info
 Installing ocaml-csexp
 ======================
 
-Installing `ocaml-csexp` from the `conda-forge` channel can be achieved by adding `conda-forge` to your channels with:
+Installing `ocaml-csexp` from the `conda-forge/label/ocaml_experimental` channel can be achieved by adding `conda-forge/label/ocaml_experimental` to your channels with:
 
 ```
-conda config --add channels conda-forge
+conda config --add channels conda-forge/label/ocaml_experimental
 conda config --set channel_priority strict
 ```
 
@@ -116,7 +116,7 @@ It is possible to list all of the versions of `ocaml-csexp` available on your pl
 <summary>With conda</summary>
 
 ```
-conda search ocaml-csexp --channel conda-forge
+conda search ocaml-csexp --channel conda-forge/label/ocaml_experimental
 ```
 
 </details>
@@ -125,7 +125,7 @@ conda search ocaml-csexp --channel conda-forge
 <summary>With mamba</summary>
 
 ```
-mamba search ocaml-csexp --channel conda-forge
+mamba search ocaml-csexp --channel conda-forge/label/ocaml_experimental
 ```
 
 </details>
@@ -134,7 +134,7 @@ mamba search ocaml-csexp --channel conda-forge
 <summary>With pixi</summary>
 
 ```
-pixi search ocaml-csexp --channel conda-forge
+pixi search ocaml-csexp --channel conda-forge/label/ocaml_experimental
 ```
 
 </details>
@@ -144,16 +144,17 @@ pixi search ocaml-csexp --channel conda-forge
 
 ```
 # Search all versions available on your platform:
-mamba repoquery search ocaml-csexp --channel conda-forge
+mamba repoquery search ocaml-csexp --channel conda-forge/label/ocaml_experimental
 
 # List packages depending on `ocaml-csexp`:
-mamba repoquery whoneeds ocaml-csexp --channel conda-forge
+mamba repoquery whoneeds ocaml-csexp --channel conda-forge/label/ocaml_experimental
 
 # List dependencies of `ocaml-csexp`:
-mamba repoquery depends ocaml-csexp --channel conda-forge
+mamba repoquery depends ocaml-csexp --channel conda-forge/label/ocaml_experimental
 ```
 
 </details>
+
 
 
 About conda-forge
@@ -170,9 +171,7 @@ for each of the installable packages. Such a repository is known as a *feedstock
 A feedstock is made up of a conda recipe (the instructions on what and how to build
 the package) and the necessary configurations for automatic building using freely
 available continuous integration services. Thanks to the awesome service provided by
-[Azure](https://azure.microsoft.com/en-us/services/devops/), [GitHub](https://github.com/),
-[CircleCI](https://circleci.com/), [AppVeyor](https://www.appveyor.com/),
-[Drone](https://cloud.drone.io/welcome), and [TravisCI](https://travis-ci.com/)
+[Azure](https://azure.microsoft.com/en-us/services/devops/) and [GitHub](https://github.com/)
 it is possible to build and upload installable packages to the
 [conda-forge](https://anaconda.org/conda-forge) [anaconda.org](https://anaconda.org/)
 channel for Linux, Windows and OSX respectively.
