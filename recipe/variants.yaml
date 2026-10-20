@@ -14,3 +14,6 @@ channel_sources:
   - conda-forge/label/ocaml_experimental,conda-forge
 channel_targets:
   - conda-forge ocaml_experimental
+
+ocaml_compiler_version:
+  - 5.4.1
