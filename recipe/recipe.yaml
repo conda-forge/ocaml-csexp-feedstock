@@ -5,6 +5,8 @@ context:
   # ocaml_win-64 ships gcc_* and vs2022_* at the same version/build; name the track.
   c_toolchain: ${{ "" if unix else c_compiler ~ "_*" }}
   library: ${{ "Library/" if not unix else "" }}
+  # static archive paired with the .cmxa: msvc ships .lib, gcc and unix ship .a
+  native_lib_ext: ${{ ".lib" if c_compiler == "vs2022" else ".a" }}
   # ELF machine token `file` prints for the target; checked by the arch test
   elf_arch: ${{ "x86-64" if target_platform == "linux-64" else "aarch64" if target_platform == "linux-aarch64" else "PowerPC" if target_platform == "linux-ppc64le" else "RISC-V" if target_platform == "linux-riscv64" else "S/390" if target_platform == "linux-s390x" else "" }}
 
@@ -81,6 +83,18 @@ tests:
       files:
         - ${{ library }}lib/ocaml/csexp/*
         - ${{ library }}doc/csexp/*
+
+  # the glob above also passes on a bytecode-only build; name the native artifacts
+  # (win-arm64 is bytecode-only upstream: OCaml 5.4 has no arm64 Windows backend)
+  - package_contents:
+      files:
+        - ${{ library }}lib/ocaml/csexp/csexp.cma
+        - ${{ library }}lib/ocaml/csexp/csexp.cmi
+        - if: target_platform != "win-arm64"
+          then:
+            - ${{ library }}lib/ocaml/csexp/csexp.cmxa
+            - ${{ library }}lib/ocaml/csexp/csexp.cmxs
+            - ${{ library }}lib/ocaml/csexp/csexp${{ native_lib_ext }}
 
   # cross lanes test under qemu binfmt, which would also run a build-machine
   # binary; check the native objects' ELF headers name the target instead
