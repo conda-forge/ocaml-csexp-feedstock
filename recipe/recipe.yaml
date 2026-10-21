@@ -1,7 +1,7 @@
 context:
   version: "1.5.2"
   # experimental branch: main's build number + 100
-  build_number: 103
+  build_number: 104
 
   # ocaml_win-64 ships gcc_* and vs2022_* at the same version/build; name the track.
   c_toolchain: ${{ "" if unix else c_compiler ~ "_*" }}
@@ -56,8 +56,8 @@ requirements:
     - if: build_platform != target_platform and unix
       then:
         - ocaml_${{ build_platform }} ${{ ocaml_compiler_version }}.*
-        # ocaml >=17: the cross compiler activates itself (shims, OCAMLLIB, host OCAMLPATH) and has natdynlink
-        - ocaml_${{ target_platform }}[version="${{ ocaml_compiler_version }}.*", build_number=">=17"]
+        # the cross compiler activates itself (shims, OCAMLLIB, host OCAMLPATH)
+        - ocaml_${{ target_platform }} ${{ ocaml_compiler_version }}.*
     # windows cross: the self-contained gcc track needs no vcvars
     - if: build_platform != target_platform and not unix
       then:
